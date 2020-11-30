@@ -13,23 +13,33 @@ const TableModel=require('../model/orderTable');
 const DishModel=require('../model/dishes');
 const UserModel=require('../model/user');
 const jwt=require('jsonwebtoken');
+
+
 async function login(req,res){
+    
     let email=req.body.email;
+    
     let password=req.body.password;
-    UserModel.findOne({email:email}).
+    console.log(email,password);
+    UserModel.findOne({'email':email}).select('+password').
     then((data)=>{
         data.comparePassword(password,(err,isMatch)=>{
            if (isMatch){ 
-               jwt.sign({id:data._id,email:data.email},'Chirag').then((token)=>{
-                   console.log(token);
-                res.status(200).json({
-                    token:token,
-                    message:"Loged In"
-                })
-               })   
+               jwt.sign({id:data._id,email:data.email},'Chirag',((err,token)=>{
+                   if(err){
+                    throw new Error("Internal Server Error")
+                   }
+                   else{
+                    res.status(200).json({
+                        Message:"Logged In",
+                        token:token
+                    })
+                   }
+               }))
         }
         else
         {
+            console.log(data);
             res.status(200).json({
                 error:"Wrong Password or User Not Found"
             })
@@ -64,18 +74,32 @@ async function signup(req,res){
 
 
 async function orderfood(req,res){
-    
-    let food=new FoodModel({
-        user:req.body.user,
-        food_id:req.body.food_id
-    })
-    // let savedHash=await HasTags.findOneAndUpdate({ 'title': element },
-    //         {$push:{'tweets':tweetId}},
-    //         {upsert:true,
-    //             new:true});
-    //         return savedHash;
-    //});
-
+    let token= req.headers.authorization.split(' ')[1];
+    console.log(token);
+        if(token == null){
+            return res.status(401).json({error:'Unauthorized'});
+        }
+        else{
+            jwt.verify(token,'Chirag',(err,payload)=>{
+                if(err){
+               // console.log(err);
+                return res.status(401).json({error:'Unauthorized'});
+            }
+            else{
+                console.log("Payload",payload);
+                let food=new FoodModel({
+                    user:payload.id,
+                    foodId:req.body.item
+                })
+                food.save().then((result)=>{
+                    res.status(200).json({
+                        message:"Food Ordered"
+                    })
+                })
+            }
+            });
+        }
+      
 }
 async function getFood(req,res){
     let cat=req.params.cat;

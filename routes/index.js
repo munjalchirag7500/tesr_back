@@ -24,6 +24,9 @@ const upload = multer({ storage: storage, fileFilter: fileFilter });
 
 router.post('/addFood',upload.single('images'),AdminController.addFood);
 
+
+router.post('/login',AdminController.login);
+router.post('/updateTask',AdminController.updateViewfood);
 router.get('/viewfood',AdminController.viewfood);
 
 router.get('/viewtable',AdminController.viewtable);
